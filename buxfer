@@ -1,0 +1,99 @@
+#!/usr/bin/php
+<?php
+//error_reporting(0);
+error_reporting(E_ALL);
+
+$white = "\033[1;37m";
+$red = "\033[1;31m";
+$lightgrey = "\033[0;37m";
+$purple = "\033[0;35m";
+$brown = "\033[0;33m";
+$default = "\033[0;29m";
+$cyan = "\033[0;36m";
+$green = "\033[0;32m";
+
+include_once('/path/to/your/simplehtmldom_1_5/simple_html_dom.php');
+
+$username = "your@emailhere.com";   
+$password = "yourpasswordhere"; 
+
+$base = "https://www.buxfer.com/api";
+
+$ch = curl_init();
+
+curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt ($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)");  
+
+$url = "$base/login.json?userid=$username&password=$password";
+$source = file_get_html($url);
+$json = json_decode($source, true);
+$token = $json['response']['token'];
+
+if (isset($argv[1])) {
+
+if ($argv[1] == "saldo") {
+$accounts_url = "$base/accounts.json&token=$token";
+$accounts_source = file_get_contents($accounts_url);
+$accounts_data = json_decode($accounts_source, true);
+
+//var_dump($accounts_data["response"]["accounts"]);
+
+echo '
+';
+
+foreach($accounts_data["response"]["accounts"] as $accounts) {
+	echo $white.''.$accounts["key-account"]["name"].'
+'.$default;
+	echo $green.''.$accounts["key-account"]["balance"].'
+'.$default;
+}
+
+echo '
+';
+
+}
+
+if ($argv[1] == "add") {
+
+if (isset($argv[2])) {
+$command = "add_transaction.json&token=$token&format=sms&text=$argv[2] $argv[3] tags:$argv[4] acct:$argv[5]";
+$command = str_replace(' ','%20', $command);
+$add_url = "$base/$command";
+$add_source = file_get_contents($add_url);
+$add_data = json_decode($add_source, true);
+
+//var_dump($add_data);
+
+if($add_data["response"]["parseStatus"] == "success") {
+echo "success.
+";
+} else {
+echo "failure.
+";
+}
+
+//echo $add_url;
+
+}
+
+else {
+
+echo '
+Usage: buxfer add starbucks 5.45 coffee,latte "Account Name"
+
+';
+
+}
+
+}
+
+} else {
+
+echo '
+Usage: buxfer [param]
+
+';
+
+}
+
+?>
